@@ -7,9 +7,9 @@ const moment = require('moment-timezone');
 const JWT_SECRET = require('../../services/config');
 const mailSender = require('../../services/mailSender');
 const { generate_OTP } = require('../../services/generatingOTP');
-const resetPasswordOtpTemplate = require('../../template/OTPVerify');
-const welcomeEmailTemplate = require('../../template/WelComeMail');
-const passwordUpdateSuccessTemplate = require('../../template/passwordUpdate');
+const resetPasswordOtpTemplate = require('../../template/OTPverify');
+const welcomeEmailTemplate = require('../../template/WelcomeMail');
+const passwordUpdateSuccessTemplate = require('');
 
 exports.createUser = async (req, res) => {
     try {
