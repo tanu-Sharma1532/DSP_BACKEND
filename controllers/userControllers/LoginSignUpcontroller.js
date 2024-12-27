@@ -9,7 +9,7 @@ const mailSender = require('../../services/mailSender');
 const { generate_OTP } = require('../../services/generatingOTP');
 const resetPasswordOtpTemplate = require('../../template/OTPverify');
 const welcomeEmailTemplate = require('../../template/WelcomeMail');
-const passwordUpdateSuccessTemplate = require('');
+const passwordUpdateSuccessTemplate = require('../../template/passwordUpdate');
 
 exports.createUser = async (req, res) => {
     try {
