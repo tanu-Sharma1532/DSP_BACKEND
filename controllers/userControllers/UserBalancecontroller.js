@@ -103,13 +103,45 @@ exports.getUserBalance = async (req, res) => {
         res.status(200).json({
             success: true,
             balance: user_balance.wallet_balance,
-            coins: user_balance.total_earnings
+            earnings: user_balance.total_earnings,
+            coins: user_balance.coins
         });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
+
+exports.updateUserCoins = async (req, res) => {
+    try {
+        const { user_id, coins } = req.body;
+
+        // Validate input
+        if (!user_id || coins === undefined || typeof coins !== 'number') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid input: user_id and a numeric coins value are required.' 
+            });
+        }
+
+        // Find and update the user's coins
+        const result = await UserBalance.findOneAndUpdate(
+            { user_id }, // Find the user by their user_id
+            { $inc: { coins } }, // Increment the coins field by the provided value
+            { new: true } // Return the updated document
+        );
+
+        if (result) {
+            return res.status(200).json({ success: true, updatedCoins: result.coins });
+        } else {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+    } catch (error) {
+        console.error('Error updating user coins:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
 
 
 

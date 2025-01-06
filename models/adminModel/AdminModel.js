@@ -1,30 +1,16 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const moment = require('moment-timezone');
 
 const adminSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
+    email: { type: String, required: true },
+    password: { type: String, required: true },
+    role: { 
+        type: String, 
+        enum: ['admin', 'executive'], 
+        default: 'admin' 
     },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true
-    },
-    userType: {
-        type: String,
-        enum: ['executive', 'manager'],
-        required: true
-    },
-    createdOn: {
-        type: Date,
-        default: () => moment().tz('Asia/Kolkata').toDate()
-    }
+    otp: { type: Number },
+    otpExpiry: { type: Date },
+    accessToken: { type: String },
 });
 
 module.exports = mongoose.model('Admin', adminSchema);

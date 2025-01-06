@@ -21,6 +21,11 @@ const userBalanceWithHistorySchema = new mongoose.Schema({
         type: Date,
         default: () => moment().tz('Asia/Kolkata').toDate()
     },
+    coins: {
+        type: Number,
+        required: false,
+        default: 0 
+    },
     balance_history: [
         {
             transactionType: {

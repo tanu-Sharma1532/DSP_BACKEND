@@ -5,6 +5,7 @@ const loginSignup = require('../controllers/userControllers/LoginSignUpcontrolle
 const verifyToken = require('../services/verifyToken');
 const balance = require('../controllers/userControllers/UserBalancecontroller');
 const Support = require('../controllers/userControllers/supportController');
+const Offer = require('../controllers/userControllers/offerController');
 
 router.post('/submitUser', loginSignup.createUser);
 router.post('/loginUserByEmail', loginSignup.loginUserByEmail);
@@ -19,9 +20,14 @@ router.post('/storeFirebaseToken', verifyToken, loginSignup.storeFirebaseToken);
 router.get('/getBalance',verifyToken,balance.getUserBalance);
 router.post('/updateBalance',verifyToken,balance.updateUserBalance);
 router.get('/balancehistory',verifyToken,balance.getBalanceHistory);
+router.post('/add-coins',verifyToken,balance.updateUserCoins);
 
 //Support Routes
 router.post('/createsupport', verifyToken,Support.createSupportMessage);
 router.get('/getsupport', verifyToken,Support.getSupportMessages);
+
+//Offers
+router.get('/offers',verifyToken,Offer.getAllOffers);
+router.get('/offers/:id',verifyToken,Offer.getOfferById);
 
 module.exports = router;
