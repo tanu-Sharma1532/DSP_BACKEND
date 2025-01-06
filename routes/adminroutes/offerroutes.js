@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const offerController = require('../../controllers/adminControllers/offerController'); // Adjust the path as needed
+const offerController = require('../../controllers/adminControllers/offercontroller'); // Adjust the path as needed
 
 // Path to save banner images
 const bannerImagesPath = 'uploads/banner_images';
