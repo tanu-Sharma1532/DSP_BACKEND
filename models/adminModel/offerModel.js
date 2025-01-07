@@ -51,6 +51,11 @@ const offerSchema = new mongoose.Schema({
             goal_description: {
                 type: String,
                 required: true
+            },
+            goal_status: {
+                type: Number, // 0: Rejected, 1: In Process, 2: Complete
+                required: true,
+                default: 1
             }
         }
     ],
