@@ -30,7 +30,7 @@ exports.getAllBrands = async (req, res) => {
             })
             .populate({
                 path: 'subcategory',
-                select: 'sub_cat_name sub_cat_image', // Fetch subcategory name and image
+                select: 'sub_cat_name', // Fetch subcategory name and image
                 justOne: true
             });
 
