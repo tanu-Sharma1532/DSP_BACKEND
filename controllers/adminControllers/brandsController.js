@@ -22,13 +22,26 @@ exports.createBrand = async (req, res) => {
 
 exports.getAllBrands = async (req, res) => {
     try {
-        const brands = await Brand.find().populate('category subcategory');
+        const brands = await Brand.find()
+            .populate({
+                path: 'category',
+                select: 'cat_name cat_image', // Fetch category name and image
+            })
+            .populate({
+                path: 'subcategory',
+                select: 'sub_cat_name sub_cat_image', // Fetch subcategory name and image
+                // In case the subcategory is not found, it will return an empty object instead of null
+                justOne: true
+            });
+
         res.status(200).json({ success: true, data: brands });
     } catch (error) {
         console.error('Error fetching brands:', error);
         res.status(500).json({ success: false, message: 'Error fetching brands.', error: error.message });
     }
 };
+
+
 
 exports.getBrandById = async (req, res) => {
     try {
