@@ -24,8 +24,9 @@ const offerSchema = new mongoose.Schema({
         required: true,
     },
     subcategory: {
-        type: String,  // Subcategory name
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubCategory', // Assuming you have a Category model
+        required: true,
     },
     our_payout: {
         type: Number,

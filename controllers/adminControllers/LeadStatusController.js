@@ -6,15 +6,23 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
     try {
         const { offerId, goalId, goalStatus, remarks } = req.body;
 
+        // Log the offerId to verify it's being passed correctly
+        console.log("Offer ID from request body:", offerId);
+
+        // Check if the offerId is a valid MongoDB ObjectId
+        if (!mongoose.Types.ObjectId.isValid(offerId)) {
+            return res.status(400).json({ success: false, message: "Invalid Offer ID." });
+        }
+
         // Fetch the offer
         const offer = await Offer.findById(offerId);
         if (!offer) {
+            console.log('Offer not found with ID:', offerId);
             return res.status(404).json({ success: false, message: "Offer not found." });
         }
 
-        // Check for existing leads related to this offer
-        const leads = await UserLead.find({ offer_id: offerId });
-        console.log('Existing Leads:', leads);
+        // Log the fetched offer to verify it's correct
+        console.log("Fetched Offer:", offer);
 
         // Handle single goal type
         if (offer.goals_type === 'single') {
@@ -114,3 +122,5 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
         });
     }
 };
+
+
