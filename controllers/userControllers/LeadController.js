@@ -23,10 +23,11 @@ exports.submitLead = async (req, res) => {
             return res.status(409).json({ message: 'Lead already exists for this offer and user.' });
         }
 
-        // Create a new lead
+        // Create a new lead with lead_status set to 1
         const newLead = new UserLead({
             user_id,
             offer_id,
+            lead_status: '1', // Set the lead_status to 1
             added_on: new Date()
         });
 
@@ -38,5 +39,3 @@ exports.submitLead = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error.' });
     }
 };
-
-
