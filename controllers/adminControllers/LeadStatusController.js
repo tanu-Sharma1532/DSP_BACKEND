@@ -4,14 +4,20 @@ const UserLead = require('../../models/adminModel/userLeadsModel');
 
 exports.updateGoalAndLeadStatus = async (req, res) => {
     try {
-        const { offerId, goalId, goalStatus, remarks } = req.body;
+        const { offerId, goalId, goalStatus, remarks, leadId } = req.body; // Take leadId from the request body
 
-        // Log the offerId to verify it's being passed correctly
+        // Log the offerId and leadId to verify they're being passed correctly
         console.log("Offer ID from request body:", offerId);
+        console.log("Lead ID from request body:", leadId);
 
         // Check if the offerId is a valid MongoDB ObjectId
         if (!mongoose.Types.ObjectId.isValid(offerId)) {
             return res.status(400).json({ success: false, message: "Invalid Offer ID." });
+        }
+
+        // Check if the leadId is a valid MongoDB ObjectId
+        if (!mongoose.Types.ObjectId.isValid(leadId)) {
+            return res.status(400).json({ success: false, message: "Invalid Lead ID." });
         }
 
         // Fetch the offer
@@ -31,13 +37,21 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
 
             // Update lead status based on the single goal status
             const leadStatus = goalStatus === 2 ? 2 : goalStatus === 0 ? 0 : 1;
-            await UserLead.updateMany({ offer_id: offerId }, { lead_status: leadStatus, remarks });
+            const updatedLead = await UserLead.findByIdAndUpdate(
+                leadId,
+                { lead_status: leadStatus, remarks },
+                { new: true } // Return the updated lead
+            );
+
+            if (!updatedLead) {
+                return res.status(404).json({ success: false, message: "Lead not found." });
+            }
 
             // Log for debugging
             console.log('Single Goal Status Updated:', goalStatus);
             console.log('Lead Status Updated for Single Goal:', leadStatus);
 
-            // Send response
+            // Send response with lead details
             return res.status(200).json({
                 success: true,
                 message: "Goal and lead statuses updated successfully for single goal.",
@@ -49,6 +63,11 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
                         goals_type: offer.goals_type,
                     },
                     remarks,
+                    lead: {
+                        leadId: updatedLead._id,
+                        lead_status: updatedLead.lead_status,
+                        remarks: updatedLead.remarks,
+                    },
                 },
             });
         }
@@ -87,10 +106,18 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
             // Log the computed lead status
             console.log('Computed Lead Status:', leadStatus);
 
-            // Update lead statuses
-            await UserLead.updateMany({ offer_id: offerId }, { lead_status: leadStatus, remarks });
+            // Update the specific lead
+            const updatedLead = await UserLead.findByIdAndUpdate(
+                leadId,
+                { lead_status: leadStatus, remarks },
+                { new: true } // Return the updated lead
+            );
 
-            // Send the response
+            if (!updatedLead) {
+                return res.status(404).json({ success: false, message: "Lead not found." });
+            }
+
+            // Send the response with lead details
             return res.status(200).json({
                 success: true,
                 message: "Goal and lead statuses updated successfully for multiple goals.",
@@ -108,7 +135,9 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
                     },
                     remarks,
                     lead: {
-                        lead_status: leadStatus,
+                        leadId: updatedLead._id,
+                        lead_status: updatedLead.lead_status,
+                        remarks: updatedLead.remarks,
                     },
                 },
             });
@@ -122,5 +151,3 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
         });
     }
 };
-
-
