@@ -34,6 +34,7 @@ router.get('/offers/:id',verifyToken,Offer.getOfferById);
 
 //leads
 router.post('/submitlead',verifyToken,leads.submitLead);
+router.get('/getleads/:user_id',verifyToken,leads.getLeads);
 
 //leaderboard
 router.get('/getleaderboard',verifyToken,leaderboard.getUserRankingsByEarnings);
