@@ -62,6 +62,7 @@ exports.getAllBrands = async (req, res) => {
                 sub_cat_name: brand.sub_cat_name,
                 sub_cat_image: brand.sub_cat_image,
                 brand_image: brand.brand_image,
+                brand_status: brand.brand_status,
                 total_live_offers: brand.total_live_offers // Include the total live offer count
             }))
         });
