@@ -1,4 +1,5 @@
 const Brand = require('../../models/adminModel/brandModel');
+const Offer = require('../../models/adminModel/offerModel');
 
 exports.createBrand = async (req, res) => {
     try {
@@ -30,11 +31,40 @@ exports.getAllBrands = async (req, res) => {
             .populate({
                 path: 'subcategory',
                 select: 'sub_cat_name sub_cat_image', // Fetch subcategory name and image
-                // In case the subcategory is not found, it will return an empty object instead of null
                 justOne: true
             });
 
-        res.status(200).json({ success: true, data: brands });
+        // Adding total_live_offers count for each brand
+        for (let brand of brands) {
+            const totalLiveOffers = await Offer.countDocuments({
+                brand: brand._id,
+                offer_status: 'live'
+            });
+            brand.total_live_offers = totalLiveOffers; // Adding the count to the brand object
+
+            // Flatten the category and subcategory fields directly in the brand object
+            brand.cat_name = brand.category.cat_name;
+            brand.sub_cat_name = brand.subcategory.sub_cat_name;
+            brand.sub_cat_image = brand.subcategory.sub_cat_image;
+            brand.brand_image = brand.brand_image;
+
+            // Remove the populated category and subcategory objects
+            delete brand.category;
+            delete brand.subcategory;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: brands.map(brand => ({
+                _id: brand._id,
+                brand_name: brand.brand_name,
+                cat_name: brand.cat_name,
+                sub_cat_name: brand.sub_cat_name,
+                sub_cat_image: brand.sub_cat_image,
+                brand_image: brand.brand_image,
+                total_live_offers: brand.total_live_offers // Include the total live offer count
+            }))
+        });
     } catch (error) {
         console.error('Error fetching brands:', error);
         res.status(500).json({ success: false, message: 'Error fetching brands.', error: error.message });

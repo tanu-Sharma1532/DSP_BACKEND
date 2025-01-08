@@ -14,12 +14,14 @@ const offerSchema = new mongoose.Schema({
         required: true
     },
     brand: {
-        type: String,  // Brand name
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand', // Assuming you have a Category model
+        required: true,
     },
     category: {
-        type: String,  // Category name
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category', // Assuming you have a Category model
+        required: true,
     },
     subcategory: {
         type: String,  // Subcategory name
