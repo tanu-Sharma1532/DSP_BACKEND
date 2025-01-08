@@ -123,3 +123,30 @@ exports.deleteSubCategoryById = async (req, res) => {
         });
     }
 };
+
+exports.getSubcategoriesByCategory = async (req, res) => {
+    try {
+        const { categoryId } = req.params;
+
+        // Validate categoryId
+        if (!categoryId) {
+            return res.status(400).json({ message: 'Category ID is required.' });
+        }
+
+        // Find subcategories by category ID
+        const subcategories = await SubCategory.find({ category: categoryId });
+
+        // Check if subcategories exist
+        if (!subcategories.length) {
+            return res.status(404).json({ message: 'No subcategories found for this category.' });
+        }
+
+        return res.status(200).json({ message: 'Subcategories retrieved successfully.', subcategories });
+    } catch (error) {
+        console.error('Error retrieving subcategories:', error);
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+
+

@@ -42,5 +42,6 @@ router.get('/subCategories', subCategoryController.getAllSubCategories);
 router.get('/getSubCategory/:id', subCategoryController.getSubCategoryById);
 router.put('/subCategories/:id', upload.single('sub_cat_image'), subCategoryController.updateSubCategoryById);
 router.delete('/subCategories/:id', subCategoryController.deleteSubCategoryById);
+router.get('/subCategoriesbyCat/:categoryId',subCategoryController.getSubcategoriesByCategory);
 
 module.exports = router;
