@@ -8,6 +8,8 @@ const Support = require('../controllers/userControllers/supportController');
 const Offer = require('../controllers/userControllers/offerController');
 const leads = require('../controllers/userControllers/LeadController');
 const leaderboard = require('../controllers/userControllers/LeaderBoard');
+const slider = require('../controllers/userControllers/sliderController');
+const textslider = require('../controllers/userControllers/textSliderController');
 
 router.post('/submitUser', loginSignup.createUser);
 router.post('/loginUserByEmail', loginSignup.loginUserByEmail);
@@ -38,5 +40,11 @@ router.get('/getleads/:user_id',verifyToken,leads.getLeads);
 
 //leaderboard
 router.get('/getleaderboard',verifyToken,leaderboard.getUserRankingsByEarnings);
+
+//Slider Controller
+router.get('/getSliders',verifyToken,slider.getAllSliders);
+
+//TextSlider
+router.get('/textslider',verifyToken,textslider.getAllTextSliders);
 
 module.exports = router;
