@@ -3,15 +3,12 @@ const Slider = require('../../models/adminModel/sliderModel');
 exports.getAllSliders = async (req, res) => {
     try {
         const sliders = await Slider.find()
-            .populate('offer_id', 'title'); // Populate offer_id with 'title'
-
-        // Format the response to include offer_id as a string and add title directly
+            .populate('offer_id', 'title');
         const formattedSliders = sliders.map(slider => ({
             _id: slider._id,
             banner_image: slider.banner_image,
-            offer_id: slider.offer_id._id,  // Extract offer_id as string
-            title: slider.offer_id.title,   // Add the title directly
-            __v: slider.__v,
+            offer_id: slider.offer_id._id,  
+            title: slider.offer_id.title,  
         }));
 
         res.status(200).json({ sliders: formattedSliders });
