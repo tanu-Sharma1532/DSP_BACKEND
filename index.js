@@ -15,6 +15,8 @@ const brandRoutes = require('./routes/adminroutes/brandroutes');
 const adminsignlogroutes = require('./routes/adminroutes/LoginSignuproutes');
 const leadsroutes = require('./routes/adminroutes/leadstatusroutes');
 const dashboardroutes = require('./routes/adminroutes/dashboardroutes');
+const sliderroutes = require('./routes/adminroutes/sliderroutes');
+const textsliderroutes = require('./routes/adminroutes/textSliderroutes');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -32,6 +34,8 @@ app.use('/admin/brand',brandRoutes);
 app.use('/admin/auth',adminsignlogroutes);
 app.use('/admin/leads',leadsroutes);
 app.use('/admin/dashboard',dashboardroutes);
+app.use('/admin/slider',sliderroutes);
+app.use('/admin/textslider',textsliderroutes);
 
 app.listen(port, () => {
     console.log("listening on port" + port);
