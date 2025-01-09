@@ -5,7 +5,6 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-
 const bannerImageStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = 'uploads/banner_images';
