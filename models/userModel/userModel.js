@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema({
   firebaseToken: { type: String, required: false },
   createdOn: { type: Date, required: false, default: () => date },
   userStatus: { type: Boolean, required: false, default: true },
-  profilePicture: { type: String, required: false },
   state: { type: String, required: false },
   city: { type: String, required: false },
   pincode: { type: String, required: false, minlength: 6, maxlength: 6 },

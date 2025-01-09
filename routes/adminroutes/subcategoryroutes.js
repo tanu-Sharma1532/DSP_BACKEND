@@ -38,10 +38,11 @@ const upload = multer({ storage, fileFilter });
 
 // Define routes
 router.post('/submitSubCategory', upload.single('sub_cat_image'), subCategoryController.createSubCategory);
-router.get('/subCategories', subCategoryController.getAllSubCategories);
+router.get('/subCategories', subCategoryController.getSubCategoriesInAscending);
 router.get('/getSubCategory/:id', subCategoryController.getSubCategoryById);
 router.put('/subCategories/:id', upload.single('sub_cat_image'), subCategoryController.updateSubCategoryById);
 router.delete('/subCategories/:id', subCategoryController.deleteSubCategoryById);
 router.get('/subCategoriesbyCat/:categoryId',subCategoryController.getSubcategoriesByCategory);
+// router.get('/ascsubcategories',subCategoryController.getSubCategoriesInAscending);
 
 module.exports = router;

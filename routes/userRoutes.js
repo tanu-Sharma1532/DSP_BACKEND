@@ -15,7 +15,7 @@ router.post('/submitUser', loginSignup.createUser);
 router.post('/loginUserByEmail', loginSignup.loginUserByEmail);
 router.post('/loginUserByMobile', loginSignup.loginUserByMobile);
 // router.get('/userProfile', verifyToken, userBasic.getUserProfile);
-// router.put('/updateUserProfile', verifyToken, upload.single('profile_pic') , userBasic.updateUserProfile);
+router.put('/updateUserProfile/:userId', verifyToken, loginSignup.updateProfile);
 router.post('/updatePassword', verifyToken, loginSignup.resetPassword);
 // router.post('/delete-user',verifyToken,userBasic.deleteUser);
 router.post('/storeFirebaseToken', verifyToken, loginSignup.storeFirebaseToken);

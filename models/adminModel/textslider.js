@@ -7,7 +7,7 @@ const TextSliderSchema = new mongoose.Schema({
     },
     offer_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Offer', // Ensure 'Offer' is the correct model name
+        ref: 'Offer',
         default: null,
     },
 });

@@ -33,12 +33,14 @@ const upload = multer({ storage, fileFilter });
 
 router.post('/brands', upload.single('brand_image'), brandController.createBrand);
 
-router.get('/brands', brandController.getAllBrands);
+router.get('/brands', brandController.getBrandsinascending);
 
 router.get('/brands/:id', brandController.getBrandById);
 
 router.put('/brands/:id', upload.single('brand_image'), brandController.updateBrandById);
 
 router.delete('/brands/:id', brandController.deleteBrandById);
+
+// router.get('/ascbrands',brandController.getBrandsinascending);
 
 module.exports = router;

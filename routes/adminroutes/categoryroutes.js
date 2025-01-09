@@ -38,12 +38,14 @@ const upload = multer({ storage, fileFilter });
 
 router.post('/createCategory', upload.single('cat_image'), categoryController.createCategory);
 
-router.get('/categories', categoryController.getAllCategories);
+router.get('/categories', categoryController.getCategoriesInAscending);
 
 router.get('/categories/:id', categoryController.getCategoryById);
 
 router.put('/categories/:id', upload.single('cat_image'), categoryController.updateCategoryById);
 
 router.delete('/categories/:id', categoryController.deleteCategoryById);
+
+// router.get('/asccategories',categoryController.getCategoriesInAscending);
 
 module.exports = router;

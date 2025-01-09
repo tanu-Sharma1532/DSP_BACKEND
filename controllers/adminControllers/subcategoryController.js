@@ -148,5 +148,23 @@ exports.getSubcategoriesByCategory = async (req, res) => {
     }
 };
 
+exports.getSubCategoriesInAscending = async (req, res) => {
+    try {
+        // Fetch all subcategories sorted by sub_cat_name in ascending order
+        const subCategories = await SubCategory.find()
+            .sort({ sub_cat_name: 1 }) // 1 for ascending order
+            .populate('category', 'cat_name'); // Populate the category with only the cat_name field
+
+        if (!subCategories || subCategories.length === 0) {
+            return res.status(404).json({ message: 'No subcategories found.' });
+        }
+
+        // Send the response with the fetched subcategories
+        res.status(200).json({ subCategories });
+    } catch (error) {
+        console.error('Error fetching subcategories:', error);
+        res.status(500).json({ message: 'Error fetching subcategories.', error: error.message });
+    }
+};
 
 
