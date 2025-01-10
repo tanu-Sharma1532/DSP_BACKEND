@@ -17,6 +17,11 @@ const userBalanceWithHistorySchema = new mongoose.Schema({
         required: false,
         default: 0
     },
+    wheel_earnings: {
+        type: Number,
+        required: false,
+        default: 0
+    },
     last_updated: {
         type: Date,
         default: () => moment().tz('Asia/Kolkata').toDate()

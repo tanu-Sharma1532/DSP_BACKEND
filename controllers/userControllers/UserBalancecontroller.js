@@ -142,6 +142,63 @@ exports.updateUserCoins = async (req, res) => {
     }
 };
 
+// Controller for spinning the wheel
+exports.spinWheel = async (req, res) => {
+    try {
+        const { userId, spinResult } = req.body;
+
+        // Validate spinResult
+        if (typeof spinResult !== 'number') {
+            return res.status(400).json({ message: 'Invalid spin result provided' });
+        }
+
+        // Find the user by ID
+        const user = await UserBalance.findOne({ user_id: userId });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if the user has enough coins to spin
+        if (user.coins < 100) {
+            return res.status(400).json({ message: 'Not enough coins to spin the wheel' });
+        }
+
+        // Deduct 100 coins for spinning
+        user.coins -= 100;
+
+        // Update the coins based on the provided spin result
+        if (spinResult > 0) {
+            user.coins += spinResult; // Add coins
+        } else {
+            user.coins += spinResult; // Subtract coins (spinResult is negative)
+        }
+
+        // Add transaction to balance history
+        user.balance_history.push({
+            transactionType: spinResult >= 0 ? 'Credited' : 'Debited',
+            amount: Math.abs(spinResult),
+            date: new Date()
+        });
+
+        // Update last updated timestamp
+        user.last_updated = new Date();
+
+        // Save the updated user document
+        await user.save();
+
+        return res.status(200).json({
+            message: 'Spin completed successfully',
+            spinResult,
+            coins: user.coins
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred', error });
+    }
+};
+
+
+
 
 
 
