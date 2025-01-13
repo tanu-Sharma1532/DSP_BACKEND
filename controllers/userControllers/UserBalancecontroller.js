@@ -2,6 +2,7 @@ const express = require('express');
 
 const UserBalance = require('../../models/userModel/userBalanceModel');
 const User = require('../../models/userModel/userModel');
+const Offer = require('../../models/adminModel/offerModel');
 const mongoose = require('mongoose');
 
 exports.updateUserBalance = async (req, res) => {
@@ -196,6 +197,70 @@ exports.spinWheel = async (req, res) => {
         return res.status(500).json({ message: 'An error occurred', error });
     }
 };
+
+exports.getUnifiedEarningHistory = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Ensure userId is a valid ObjectId string before converting
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid userId format' });
+        }
+
+        // Convert userId to ObjectId (using mongoose.Types.ObjectId directly)
+        const userObjectId = new mongoose.Types.ObjectId(userId);  // Using 'new' for ObjectId conversion
+
+        // Fetch user wallet history
+        const user = await UserBalance.findOne({ user_id: userObjectId });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        console.log("user",user);
+
+        // Get balance history
+        const spinHistory = user.balance_history
+            .map(entry => ({
+                amount: entry.amount,
+                date: entry.date,
+                source: 'Spin Wheel',
+                transactionType: entry.transactionType  // Adding transaction type
+            }));
+
+        // Fetch offer-related earnings
+        const offerEarnings = await Offer.find({ 'multiple_rewards.goal_status': 2 });
+        console.log("offer-earnings",offerEarnings);
+
+        const formattedOfferEarnings = offerEarnings.map(offer => ({
+            title: offer.title,
+            brand: offer.brand ? offer.brand.brand_name : 'Unknown Brand',
+            category: offer.category ? offer.category.cat_name : 'Unknown Category',
+            subcategory: offer.subcategory ? offer.subcategory.sub_cat_name : 'Unknown Subcategory',
+            amount: offer.total_user_payout,
+            date: offer.added_on,
+            source: 'Offer',
+            transactionType: offer.total_user_payout >= 0 ? 'Credited' : 'Debited'  // Adding transaction type
+        }));
+
+        // Combine all earnings
+        const unifiedEarnings = [
+            ...spinHistory,
+            ...formattedOfferEarnings
+        ];
+
+        // Sort earnings by date (descending)
+        unifiedEarnings.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        return res.status(200).json({
+            message: 'Unified earning history fetched successfully',
+            totalEarnings: user.total_earnings,
+            history: unifiedEarnings
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred while fetching earning history', error });
+    }
+};
+
 
 
 

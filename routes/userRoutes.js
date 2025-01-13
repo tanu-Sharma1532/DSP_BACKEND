@@ -26,6 +26,7 @@ router.post('/updateBalance',verifyToken,balance.updateUserBalance);
 router.get('/balancehistory',verifyToken,balance.getBalanceHistory);
 router.post('/add-coins',verifyToken,balance.updateUserCoins);
 router.put('/spin-wheel',verifyToken,balance.spinWheel);
+router.get('/earning-history/:userId',verifyToken,balance.getUnifiedEarningHistory);
 
 //Support Routes
 router.post('/createsupport', verifyToken,Support.createSupportMessage);
