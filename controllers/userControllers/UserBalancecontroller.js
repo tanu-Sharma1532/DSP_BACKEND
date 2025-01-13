@@ -207,39 +207,52 @@ exports.getUnifiedEarningHistory = async (req, res) => {
             return res.status(400).json({ message: 'Invalid userId format' });
         }
 
-        // Convert userId to ObjectId (using mongoose.Types.ObjectId directly)
-        const userObjectId = new mongoose.Types.ObjectId(userId);  // Using 'new' for ObjectId conversion
+        // Convert userId to ObjectId
+        const userObjectId = new mongoose.Types.ObjectId(userId);
 
         // Fetch user wallet history
         const user = await UserBalance.findOne({ user_id: userObjectId });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        console.log("user",user);
 
         // Get balance history
-        const spinHistory = user.balance_history
-            .map(entry => ({
-                amount: entry.amount,
-                date: entry.date,
-                source: 'Spin Wheel',
-                transactionType: entry.transactionType  // Adding transaction type
-            }));
+        const spinHistory = user.balance_history.map(entry => ({
+            amount: entry.amount,
+            date: entry.date,
+            source: 'Spin Wheel',
+            transactionType: entry.transactionType
+        }));
 
         // Fetch offer-related earnings
-        const offerEarnings = await Offer.find({ 'multiple_rewards.goal_status': 2 });
-        console.log("offer-earnings",offerEarnings);
+        const offerEarnings = await Offer.find();
 
-        const formattedOfferEarnings = offerEarnings.map(offer => ({
-            title: offer.title,
-            brand: offer.brand ? offer.brand.brand_name : 'Unknown Brand',
-            category: offer.category ? offer.category.cat_name : 'Unknown Category',
-            subcategory: offer.subcategory ? offer.subcategory.sub_cat_name : 'Unknown Subcategory',
-            amount: offer.total_user_payout,
-            date: offer.added_on,
-            source: 'Offer',
-            transactionType: offer.total_user_payout >= 0 ? 'Credited' : 'Debited'  // Adding transaction type
-        }));
+        // Format offer earnings
+        const formattedOfferEarnings = offerEarnings.map(offer => {
+            // Filter only completed goals (goal_status === 2)
+            const completedGoals = offer.multiple_rewards.filter(goal => goal.goal_status === 2);
+
+            if (completedGoals.length === 0) {
+                // Skip offers with no completed goals
+                return null;
+            }
+
+            // Format goals with only the required details
+            const goals = completedGoals.map(goal => ({
+                goalName: goal.goal_name,
+                goalStatus: goal.goal_status,
+                goalAmount: goal.goal_amount
+            }));
+
+            return {
+                title: offer.title,
+                amount: offer.total_user_payout,
+                date: offer.added_on,
+                source: 'Offer',
+                transactionType: offer.total_user_payout >= 0 ? 'Credited' : 'Debited',
+                goals
+            };
+        }).filter(offer => offer !== null); // Remove null offers
 
         // Combine all earnings
         const unifiedEarnings = [
@@ -260,10 +273,4 @@ exports.getUnifiedEarningHistory = async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while fetching earning history', error });
     }
 };
-
-
-
-
-
-
 

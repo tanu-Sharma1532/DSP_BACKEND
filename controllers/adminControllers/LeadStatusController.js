@@ -47,6 +47,21 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
                 return res.status(404).json({ success: false, message: "Lead not found." });
             }
 
+            // Credit the goal amount if goalStatus is 2 (Completed)
+            if (goalStatus === 2) {
+                const user = await User.findById(updatedLead.user_id);
+                if (!user) {
+                    return res.status(404).json({ success: false, message: "User not found." });
+                }
+
+                // Credit the amount to the user's balance
+                user.balance += offer.goal_amount;  // Add the goal amount to the user's balance
+                await user.save(); // Save the updated user balance
+
+                // Log for debugging
+                console.log(`Goal amount credited: ${offer.goal_amount} to user balance.`);
+            }
+
             // Log for debugging
             console.log('Single Goal Status Updated:', goalStatus);
             console.log('Lead Status Updated for Single Goal:', leadStatus);
@@ -117,6 +132,21 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
                 return res.status(404).json({ success: false, message: "Lead not found." });
             }
 
+            // Credit the goal amount if the goalStatus is 2 (Completed)
+            if (goalStatus === 2) {
+                const user = await User.findById(updatedLead.user_id);
+                if (!user) {
+                    return res.status(404).json({ success: false, message: "User not found." });
+                }
+
+                // Credit the amount to the user's balance
+                user.balance += goal.goal_amount;  // Add the goal amount to the user's balance
+                await user.save(); // Save the updated user balance
+
+                // Log for debugging
+                console.log(`Goal amount credited: ${goal.goal_amount} to user balance.`);
+            }
+
             // Send the response with lead details
             return res.status(200).json({
                 success: true,
@@ -151,3 +181,4 @@ exports.updateGoalAndLeadStatus = async (req, res) => {
         });
     }
 };
+
