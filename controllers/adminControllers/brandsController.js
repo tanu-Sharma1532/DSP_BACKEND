@@ -20,17 +20,16 @@ exports.createBrand = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error creating brand.', error: error.message });
     }
 };
-
 exports.getAllBrands = async (req, res) => {
     try {
         const brands = await Brand.find()
             .populate({
                 path: 'category',
-                select: 'cat_name cat_image', // Fetch category name and image
+                select: 'cat_name', // Only select cat_name from category
             })
             .populate({
                 path: 'subcategory',
-                select: 'sub_cat_name', // Fetch subcategory name and image
+                select: 'sub_cat_name sub_cat_image', // Only select sub_cat_name and sub_cat_image from subcategory
                 justOne: true
             });
 
@@ -42,25 +41,30 @@ exports.getAllBrands = async (req, res) => {
             });
             brand.total_live_offers = totalLiveOffers; // Adding the count to the brand object
 
-            // Flatten the category and subcategory fields directly in the brand object
+            // Flatten the category into cat_name
             brand.cat_name = brand.category.cat_name;
+
+            // Flatten the subcategory into sub_cat_name and sub_cat_image
             brand.sub_cat_name = brand.subcategory.sub_cat_name;
             brand.sub_cat_image = brand.subcategory.sub_cat_image;
-            brand.brand_image = brand.brand_image;
 
             // Remove the populated category and subcategory objects
             delete brand.category;
             delete brand.subcategory;
         }
 
+        // Log the processed brands to the console
+        console.log('Processed Brands:', brands);
+
+        // Send the final response with the required structure
         res.status(200).json({
             success: true,
             data: brands.map(brand => ({
                 _id: brand._id,
                 brand_name: brand.brand_name,
-                cat_name: brand.cat_name,
-                sub_cat_name: brand.sub_cat_name,
-                sub_cat_image: brand.sub_cat_image,
+                cat_name: brand.cat_name, // Flattened category name
+                sub_cat_name: brand.sub_cat_name, // Flattened subcategory name
+                sub_cat_image: brand.sub_cat_image, // Flattened subcategory image
                 brand_image: brand.brand_image,
                 brand_status: brand.brand_status,
                 total_live_offers: brand.total_live_offers // Include the total live offer count
@@ -71,6 +75,7 @@ exports.getAllBrands = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error fetching brands.', error: error.message });
     }
 };
+
 
 
 
