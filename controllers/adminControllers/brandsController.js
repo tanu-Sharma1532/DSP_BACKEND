@@ -129,26 +129,36 @@ exports.deleteBrandById = async (req, res) => {
 
 exports.getBrandsinascending = async (req, res) => {
     try {
-        // Fetch all brands sorted by brand_name in ascending orders
+        // Fetch all brands sorted by brand_name in ascending order
         const brands = await Brand.find()
             .sort({ brand_name: 1 }) // 1 for ascending order
             .populate('category', 'cat_name') // Populate the category with only the cat_name field
-            .populate('subcategory', 'sub_cat_name'); // Populate the subcategory with only the sub_cat_name field
+            .populate('subcategory', 'sub_cat_name sub_cat_image'); // Populate the subcategory with only the sub_cat_name and sub_cat_image fields
 
         if (!brands || brands.length === 0) {
             return res.status(404).json({ message: 'No brands found.' });
         }
 
-        // Flatten category and subcategory information
-        brands.forEach(brand => {
+        // Adding total_live_offers count for each brand
+        for (let brand of brands) {
+            // Count live offers for the current brand
+            const totalLiveOffers = await Offer.countDocuments({
+                brand: brand._id,
+                offer_status: 'live'
+            });
+            brand.total_live_offers = totalLiveOffers; // Add the total live offers count to the brand object
+
+            // Flatten the category and subcategory information
             brand.cat_name = brand.category.cat_name; // Flatten the category name
             brand.sub_cat_name = brand.subcategory.sub_cat_name; // Flatten the subcategory name
+            brand.sub_cat_image = brand.subcategory.sub_cat_image; // Flatten the subcategory image
+
             // Remove the populated category and subcategory objects
             delete brand.category;
             delete brand.subcategory;
-        });
+        }
 
-        // Send the response with the flattened brands
+        // Send the response with the flattened brands and total live offers
         res.status(200).json({
             success: true,
             brands: brands.map(brand => ({
@@ -156,9 +166,10 @@ exports.getBrandsinascending = async (req, res) => {
                 brand_name: brand.brand_name,
                 cat_name: brand.cat_name, // Direct cat_name field
                 sub_cat_name: brand.sub_cat_name, // Direct sub_cat_name field
+                sub_cat_image: brand.sub_cat_image, // Direct sub_cat_image field
                 brand_image: brand.brand_image,
                 brand_status: brand.brand_status,
-                total_live_offers: brand.total_live_offers
+                total_live_offers: brand.total_live_offers // Include the total live offer count
             }))
         });
     } catch (error) {
@@ -166,5 +177,3 @@ exports.getBrandsinascending = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error fetching brands.', error: error.message });
     }
 };
-
-
