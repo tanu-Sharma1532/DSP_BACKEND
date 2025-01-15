@@ -81,13 +81,13 @@ const resetPasswordOtpTemplate = (otp , name) => {
             <div class="message">Password Reset Request</div>
             <div class="body">
                 <p>Dear ${name},</p>
-                <p>We received a request to reset your password for your Cartvit account. To proceed with the password reset, please use the following OTP (One-Time Password):</p>
+                <p>We received a request to reset your password for your Earnvit account. To proceed with the password reset, please use the following OTP (One-Time Password):</p>
                 <div class="otp-container">
                     <h2 class="highlight">${otp}</h2>
                 </div>
                 <p>This OTP is valid for 5 minutes. If you did not request a password reset, please disregard this email and ensure the security of your account.</p>
             </div>
-            <div class="support">If you have any questions or need assistance, please feel free to reach out to us at <a href="mailto:info@studynotion.com">info@studynotion.com</a>. We are here to help!</div>
+            <div class="support">If you have any questions or need assistance, please feel free to reach out to us at <a href="mailto:"></a>. We are here to help!</div>
         </div>
     </body>
     
