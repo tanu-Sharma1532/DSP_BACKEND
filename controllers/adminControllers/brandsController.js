@@ -129,7 +129,7 @@ exports.deleteBrandById = async (req, res) => {
 
 exports.getBrandsinascending = async (req, res) => {
     try {
-        // Fetch all brands sorted by brand_name in ascending order
+        // Fetch all brands sorted by brand_name in ascending orders
         const brands = await Brand.find()
             .sort({ brand_name: 1 }) // 1 for ascending order
             .populate('category', 'cat_name') // Populate the category with only the cat_name field
