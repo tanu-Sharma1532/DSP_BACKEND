@@ -20,6 +20,11 @@ router.post('/updatePassword', verifyToken, loginSignup.resetPassword);
 // router.post('/delete-user',verifyToken,userBasic.deleteUser);
 router.post('/storeFirebaseToken', verifyToken, loginSignup.storeFirebaseToken);
 
+// forget password 
+router.post('/forget-password', loginSignup.sendOTP);
+router.post('/verify-otp', loginSignup.verifyOTP)
+router.post('/reset-password', loginSignup.resetpassword);
+
 //Balance Routes
 router.get('/getBalance',verifyToken,balance.getUserBalance);
 router.post('/updateBalance',verifyToken,balance.updateUserBalance);

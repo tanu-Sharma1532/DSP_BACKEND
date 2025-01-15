@@ -287,6 +287,63 @@ exports.resetPassword = async (req, res) => {
     }
   };
 
+  exports.sendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const otp = generate_OTP(4);
+        user.otp = otp;
+        user.otpExpiry = new Date(Date.now() + 10 * 60000); 
+        await user.save();
+
+        const emailTemplate = resetPasswordOtpTemplate(otp , user.name);
+        await mailSender(email, 'Password Reset OTP', emailTemplate);
+
+        return res.status(200).json({ success: true, message: 'OTP sent successfully' });
+    } catch (err) {
+        console.error('Error sending OTP:', err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+};
+
+exports.verifyOTP = async (req, res) => {
+    try {
+        const {otp} = req.body;
+        const user = await User.findOne({otp});
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+        await user.save();
+        res.status(200).json({ success: true, message: 'Valid OTP' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
+
+exports.resetpassword = async(req,res) => {
+    try{
+        const{email,newPassword} = req.body;
+        const user = await User.findOne({email});
+        if(!user){
+            return res.status(400).json({success:false, message:'Invalid User'});
+        }
+        user.password = await bcrypt.hash(newPassword,10);
+        user.otp = undefined;
+        await user.save();
+        const emailTemplate = passwordUpdateSuccessTemplate(user.name);
+        await mailSender(email, 'Password Updated Successfully', emailTemplate);
+        res.status(200).json({success:true, message:'Password Reset Successfully'});
+    }catch(error){
+        console.log(error);
+        res.status(500).json({success:true, message:'Error in resetting password'})
+    }
+}
 
 exports.updateProfile = async (req, res) => {
     try {
