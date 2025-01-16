@@ -204,17 +204,22 @@ exports.getUnifiedEarningHistory = async (req, res) => {
 
         // Ensure userId is a valid ObjectId string before converting
         if (!mongoose.Types.ObjectId.isValid(userId)) {
+            console.log('Invalid userId format');
             return res.status(400).json({ message: 'Invalid userId format' });
         }
 
         // Convert userId to ObjectId
         const userObjectId = new mongoose.Types.ObjectId(userId);
+        console.log('Converted userId to ObjectId:', userObjectId);
 
         // Fetch user wallet history
         const user = await UserBalance.findOne({ user_id: userObjectId });
         if (!user) {
+            console.log('User not found');
             return res.status(404).json({ message: 'User not found' });
         }
+
+        console.log('User balance data:', user);
 
         // Get balance history
         const spinHistory = user.balance_history.map(entry => ({
@@ -223,21 +228,27 @@ exports.getUnifiedEarningHistory = async (req, res) => {
             source: 'Spin Wheel',
             transactionType: entry.transactionType
         }));
+        console.log('Spin wheel history:', spinHistory);
 
         // Fetch offer-related earnings
         const offerEarnings = await Offer.find();
+        console.log('Offer earnings fetched:', offerEarnings);
 
-        // Format offer earnings
+        // Format offer earnings and calculate goal earnings
+        let goalEarnings = 0;
         const formattedOfferEarnings = offerEarnings.map(offer => {
-            // Filter only completed goals (goal_status === 2)
             const completedGoals = offer.multiple_rewards.filter(goal => goal.goal_status === 2);
+            console.log('Completed goals for offer:', offer.title, completedGoals);
 
             if (completedGoals.length === 0) {
-                // Skip offers with no completed goals
                 return null;
             }
 
-            // Format goals with only the required details
+            completedGoals.forEach(goal => {
+                goalEarnings += goal.goal_amount; // Accumulate goal earnings
+                console.log('Accumulated goal earnings:', goalEarnings);
+            });
+
             const goals = completedGoals.map(goal => ({
                 goalName: goal.goal_name,
                 goalStatus: goal.goal_status,
@@ -252,25 +263,43 @@ exports.getUnifiedEarningHistory = async (req, res) => {
                 transactionType: offer.total_user_payout >= 0 ? 'Credited' : 'Debited',
                 goals
             };
-        }).filter(offer => offer !== null); // Remove null offers
+        }).filter(offer => offer !== null);
+
+        console.log('Formatted offer earnings:', formattedOfferEarnings);
 
         // Combine all earnings
         const unifiedEarnings = [
             ...spinHistory,
             ...formattedOfferEarnings
         ];
+        console.log('Unified earnings before sorting:', unifiedEarnings);
 
         // Sort earnings by date (descending)
         unifiedEarnings.sort((a, b) => new Date(b.date) - new Date(a.date));
+        console.log('Sorted unified earnings:', unifiedEarnings);
+
+        // Update user balance if there were goal earnings
+        if (goalEarnings > 0) {
+            user.total_earnings += goalEarnings; // Update total earnings
+            user.balance_history.push({
+                amount: goalEarnings,
+                date: new Date(),
+                transactionType: 'Credited' // Assuming goal earnings are credited
+            });
+
+            console.log('Updating user balance with goal earnings:', goalEarnings);
+            await user.save(); // Save updated user balance
+            console.log('User balance after update:', user);
+        }
 
         return res.status(200).json({
             message: 'Unified earning history fetched successfully',
             totalEarnings: user.total_earnings,
-            history: unifiedEarnings
+            history: unifiedEarnings, // Combined earnings (spin wheel + offer)
+            offerEarnings: formattedOfferEarnings // Offer-specific earnings
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error:', error);
         return res.status(500).json({ message: 'An error occurred while fetching earning history', error });
     }
 };
-

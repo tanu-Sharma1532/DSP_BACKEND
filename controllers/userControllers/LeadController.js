@@ -34,20 +34,19 @@ exports.submitLead = async (req, res) => {
         const existingLead = await UserLead.findOne({ 
             user_id, 
             offer_id, 
-            ...(goal_id ? { goal_id } : {}) // Include goal_id in the query if applicable
+            ...(goal_id ? { 'goals.goal_id': goal_id } : {}) // Include goal_id in the query if applicable
         });
 
         if (existingLead) {
             return res.status(409).json({ message: 'Lead already exists for this offer, user, and goal.' });
         }
 
-        // Create a new lead
+        // Create a new lead with goals array including goal_id
         const newLead = new UserLead({
             user_id,
             offer_id,
-            goal_id: goal_id || null, // Set goal_id if provided
             lead_status: '1', // Set the lead_status to 1
-            goal_status:'1',
+            goals: goal_id ? [{ goal_id, goal_status: 1 }] : [], // Add the goal_id to the goals array if present
             added_on: new Date(),
         });
 
@@ -59,6 +58,7 @@ exports.submitLead = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error.' });
     }
 };
+
 
 exports.getLeads = async (req, res) => {
   try {
@@ -87,32 +87,34 @@ exports.getLeads = async (req, res) => {
       }
 
       // Format the response to include the goals data, lead_status, brand_image, and payout
-      const formattedLeads = leads.map(lead => {
-          // Extracting the offer and goals information
-          const offer = lead.offer_id;
-          const brand = offer.brand;
-
-          const goals = offer.multiple_rewards.map(goal => ({
-              goal_name: goal.goal_name,
-              goal_amount: goal.goal_amount,
-              goal_description: goal.goal_description,
-              goal_id: goal._id, // Including goal_id in the response
-              goal_status: goal.goal_status, // Adding goal_status for each goal
-          }));
-
-          // Return the formatted lead with additional fields
-          return {
-              _id: lead._id,
-              user_id: lead.user_id,
-              offer_id: offer._id,
-              offer_title: offer.title,
-              offer_description: offer.description,
-              brand_image: brand?.brand_image || null, // Include brand_image (fallback to null if not present)
-              goals: goals, // Add the goals data
-              lead_status: lead.lead_status, // Include lead_status
-              added_on: lead.added_on,
-          };
-      });
+      const formattedLeads = leads.map((lead) => {
+        const offer = lead.offer_id;
+        const brand = offer.brand;
+    
+        const goals = offer.multiple_rewards.map((goal) => {
+            const userGoal = lead.goals.find((g) => String(g.goal_id) === String(goal._id));
+            return {
+                goal_name: goal.goal_name,
+                goal_amount: goal.goal_amount,
+                goal_description: goal.goal_description,
+                goal_id: goal._id,
+                goal_status: userGoal ? userGoal.goal_status : 0, // Default to 0 (Pending) if not found
+            };
+        });
+    
+        return {
+            _id: lead._id,
+            user_id: lead.user_id,
+            offer_id: offer._id,
+            offer_title: offer.title,
+            offer_description: offer.description,
+            brand_image: brand?.brand_image || null,
+            goals,
+            lead_status: lead.lead_status,
+            added_on: lead.added_on,
+        };
+    });
+    
 
       // Send the formatted leads in the response
       res.status(200).json(formattedLeads);

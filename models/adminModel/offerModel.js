@@ -15,17 +15,17 @@ const offerSchema = new mongoose.Schema({
     },
     brand: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Brand', // Assuming you have a Category model
+        ref: 'Brand',
         required: true,
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category', // Assuming you have a Category model
+        ref: 'Category',
         required: true,
     },
     subcategory: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'SubCategory', // Assuming you have a Category model
+        ref: 'SubCategory',
         required: true,
     },
     our_payout: {
@@ -56,9 +56,9 @@ const offerSchema = new mongoose.Schema({
                 required: true
             },
             goal_status: {
-                type: Number, // 0: Rejected, 1: In Process, 2: Complete
+                type: Number, // 0: Rejected, 1: In Process, 2: Complete, 3: New Status
                 required: true,
-                default: 1
+                default: 3 // Set initial value to 3
             }
         }
     ],

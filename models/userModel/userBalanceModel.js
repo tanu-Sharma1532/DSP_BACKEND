@@ -29,7 +29,7 @@ const userBalanceWithHistorySchema = new mongoose.Schema({
     coins: {
         type: Number,
         required: false,
-        default: 0 
+        default: 0
     },
     balance_history: [
         {
@@ -43,6 +43,27 @@ const userBalanceWithHistorySchema = new mongoose.Schema({
                 required: true
             },
             date: {
+                type: Date,
+                default: () => moment().tz('Asia/Kolkata').toDate()
+            }
+        }
+    ],
+    goals: [
+        {
+            offer_id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Offer',
+                required: true
+            },
+            goal_name: {
+                type: String,
+                required: true
+            },
+            goal_payout: {
+                type: Number,
+                required: true
+            },
+            completed_on: {
                 type: Date,
                 default: () => moment().tz('Asia/Kolkata').toDate()
             }
