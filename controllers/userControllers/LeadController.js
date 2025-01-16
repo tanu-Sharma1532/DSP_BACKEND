@@ -4,7 +4,7 @@ const Offer = require('../../models/adminModel/offerModel');
 
 exports.submitLead = async (req, res) => {
     try {
-        const { user_id, offer_id } = req.body;
+        const { user_id, offer_id, goal_id } = req.body;
 
         // Validate required fields
         if (!user_id || !offer_id) {
@@ -12,23 +12,43 @@ exports.submitLead = async (req, res) => {
         }
 
         // Check if the offer exists
-        const offerExists = await Offer.findById(offer_id);
-        if (!offerExists) {
+        const offer = await Offer.findById(offer_id);
+        if (!offer) {
             return res.status(404).json({ message: 'Offer not found.' });
         }
 
-        // Check for an existing lead for the same user and offer
-        const existingLead = await UserLead.findOne({ user_id, offer_id });
-        if (existingLead) {
-            return res.status(409).json({ message: 'Lead already exists for this offer and user.' });
+        // If goal_type is "multiple", validate the goal_id
+        if (offer.goal_type === 'multiple') {
+            if (!goal_id) {
+                return res.status(400).json({ message: 'Goal ID is required for offers with multiple goals.' });
+            }
+
+            // Check if the goal_id exists within the offer's multiple_rewards
+            const goalExists = offer.multiple_rewards.some(goal => goal._id.toString() === goal_id);
+            if (!goalExists) {
+                return res.status(404).json({ message: 'Invalid Goal ID.' });
+            }
         }
 
-        // Create a new lead with lead_status set to 1
+        // Check for an existing lead for the same user, offer, and goal_id (if applicable)
+        const existingLead = await UserLead.findOne({ 
+            user_id, 
+            offer_id, 
+            ...(goal_id ? { goal_id } : {}) // Include goal_id in the query if applicable
+        });
+
+        if (existingLead) {
+            return res.status(409).json({ message: 'Lead already exists for this offer, user, and goal.' });
+        }
+
+        // Create a new lead
         const newLead = new UserLead({
             user_id,
             offer_id,
+            goal_id: goal_id || null, // Set goal_id if provided
             lead_status: '1', // Set the lead_status to 1
-            added_on: new Date()
+            goal_status:'1',
+            added_on: new Date(),
         });
 
         await newLead.save();
