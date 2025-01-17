@@ -14,7 +14,7 @@ const textslider = require('../controllers/userControllers/textSliderController'
 router.post('/submitUser', loginSignup.createUser);
 router.post('/loginUserByEmail', loginSignup.loginUserByEmail);
 router.post('/loginUserByMobile', loginSignup.loginUserByMobile);
-// router.get('/userProfile', verifyToken, userBasic.getUserProfile);
+router.get('/userProfile/:userId', verifyToken, loginSignup.getUserProfile);
 router.put('/updateUserProfile/:userId', verifyToken, loginSignup.updateProfile);
 router.post('/updatePassword', verifyToken, loginSignup.resetPassword);
 // router.post('/delete-user',verifyToken,userBasic.deleteUser);

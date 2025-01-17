@@ -378,3 +378,25 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+
+exports.getUserProfile = async (req, res) => {
+    try {
+        const { userId } = req.params; // Get the userId from the URL parameters
+
+        // Find the user by userId
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Convert user to plain object and remove emailVerification field
+        const responseUser = user.toObject();
+        delete responseUser.emailVerification;
+
+        res.status(200).json({ message: 'User profile retrieved successfully.', user: responseUser });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error retrieving user profile.', error: error.message });
+    }
+};
