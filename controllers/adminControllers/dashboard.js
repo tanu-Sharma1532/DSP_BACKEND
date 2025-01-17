@@ -31,14 +31,28 @@ exports.getDashboardData = async (req, res) => {
 
         // Completed Offers
         const completedOffers = await Lead.countDocuments({
-            lead_status: 2,  // Assuming 2 represents completed status in the lead_status field
+            lead_status: 2, // Assuming 2 represents completed status in the lead_status field
         });
-        console.log(completedOffers);
+
         // Today's Completed Offers (Leads)
         const todaysCompletedOffers = await Lead.countDocuments({
             added_on: { $gte: today, $lt: tomorrow },
             lead_status: 2, // Completed leads
         });
+
+        // Total Revenue and Total Profit
+        const revenueAndProfit = await Offer.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$our_payout' },
+                    totalProfit: { $sum: '$total_user_payout' },
+                },
+            },
+        ]);
+
+        const totalRevenue = revenueAndProfit[0]?.totalRevenue || 0;
+        const totalProfit = revenueAndProfit[0]?.totalProfit || 0;
 
         // Top 5 Performing Offers by Leads
         const topOffers = await Lead.aggregate([
@@ -108,6 +122,8 @@ exports.getDashboardData = async (req, res) => {
                 expiredOffers,
                 completedOffers,
                 todaysCompletedOffers,
+                totalRevenue,
+                totalProfit,
                 topOffers,
                 topUsers,
             },
@@ -121,4 +137,3 @@ exports.getDashboardData = async (req, res) => {
         });
     }
 };
-

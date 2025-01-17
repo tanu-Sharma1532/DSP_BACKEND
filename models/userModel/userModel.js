@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   mobile: { type: String, required: true },
   password: { type: String, required: true },
-  emailVerification: { type: Boolean, required: false, default: false },
   firebaseToken: { type: String, required: false },
   createdOn: { type: Date, required: false, default: () => date },
   userStatus: { type: Boolean, required: false, default: true },
@@ -19,6 +18,7 @@ const userSchema = new mongoose.Schema({
   account_deleted: { type: Boolean, required: false, default: false },
   otp: { type: String, required: false },
   otpExpiry: { type: Date, required: false },
+  gender:{type: String, required: false}
 });
 
 module.exports = mongoose.model('User', userSchema);

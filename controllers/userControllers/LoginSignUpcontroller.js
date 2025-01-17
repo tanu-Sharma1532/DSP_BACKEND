@@ -347,8 +347,8 @@ exports.resetpassword = async(req,res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { userId } = req.params;  // Get the userId from the URL parameters
-        const { name, state, city, pincode } = req.body;
+        const { userId } = req.params; // Get the userId from the URL parameters
+        const { name, state, city, pincode, gender } = req.body;
 
         // Find the user by userId
         const user = await User.findById(userId);
@@ -362,13 +362,19 @@ exports.updateProfile = async (req, res) => {
         user.state = state || user.state;
         user.city = city || user.city;
         user.pincode = pincode || user.pincode;
+        user.gender = gender || user.gender;
 
         // Save the updated user
         const updatedUser = await user.save();
 
-        res.status(200).json({ message: 'Profile updated successfully.', user: updatedUser });
+        // Convert user to plain object and remove emailVerification field
+        const responseUser = updatedUser.toObject();
+        delete responseUser.emailVerification;
+
+        res.status(200).json({ message: 'Profile updated successfully.', user: responseUser });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error updating profile.', error: error.message });
     }
 };
+
