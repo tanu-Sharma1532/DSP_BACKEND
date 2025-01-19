@@ -76,8 +76,19 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     transactionType: 'Credited',
                     amount,
                     date: moment().tz('Asia/Kolkata').toDate(),
+                    source: {
+                        offer_id: offerId,
+                        goal_name: goalId,
+                        goal_payout: amount,
+                        completed_on: moment().tz('Asia/Kolkata').toDate()
+                    }
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
+
+                // Initialize goals array if not defined
+                if (!userBalance.goals) {
+                    userBalance.goals = [];
+                }
 
                 // Add the goal to the goals array if not already added
                 const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === goalId);
@@ -138,8 +149,19 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     transactionType: 'Credited',
                     amount: goalPayout,
                     date: moment().tz('Asia/Kolkata').toDate(),
+                    source: {
+                        offer_id: offerId,
+                        goal_name: goalId,
+                        goal_payout: goalPayout,
+                        completed_on: moment().tz('Asia/Kolkata').toDate()
+                    }
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
+
+                // Initialize goals array if not defined
+                if (!userBalance.goals) {
+                    userBalance.goals = [];
+                }
 
                 // Add the goal to the goals array if not already added
                 const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === goalId);

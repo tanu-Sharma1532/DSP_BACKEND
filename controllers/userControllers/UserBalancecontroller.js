@@ -3,6 +3,7 @@ const express = require('express');
 const UserBalance = require('../../models/userModel/userBalanceModel');
 const User = require('../../models/userModel/userModel');
 const Offer = require('../../models/adminModel/offerModel');
+const UserLead = require('../../models/adminModel/userLeadsModel');
 const mongoose = require('mongoose');
 
 exports.updateUserBalance = async (req, res) => {
@@ -148,71 +149,115 @@ exports.spinWheel = async (req, res) => {
     try {
         const { userId, spinResult } = req.body;
 
-        // Validate spinResult
+        // Validate `userId` and `spinResult`
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid userId provided' });
+        }
         if (typeof spinResult !== 'number') {
             return res.status(400).json({ message: 'Invalid spin result provided' });
         }
 
-        // Find the user by ID
-        const user = await UserBalance.findOne({ user_id: userId });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        // Check if the user's balance exists in UserBalanceWithHistory
+        let userBalance = await UserBalance.findOne({ user_id: userId });
+        if (!userBalance) {
+            // If no balance is found, create a new one with default values
+            userBalance = new UserBalanceWithHistory({
+                user_id: userId,
+                wallet_balance: 25, // Default wallet balance
+                total_earnings: 0, // Default total earnings
+                wheel_earnings: 0, // Default wheel earnings
+                last_updated: new Date(),
+                coins: 100, // Default coins
+                balance_history: [],
+                goals: [], // Empty goals initially
+            });
+
+            await userBalance.save();
         }
 
         // Check if the user has enough coins to spin
-        if (user.coins < 100) {
+        if (userBalance.coins < 100) {
             return res.status(400).json({ message: 'Not enough coins to spin the wheel' });
         }
 
         // Deduct 100 coins for spinning
-        user.coins -= 100;
+        userBalance.coins -= 100;
 
-        // Update the coins based on the provided spin result
+        // Create a transaction entry for the deduction
+        const spinDeductionTransaction = {
+            transactionType: 'Debited',
+            amount: 100,
+            date: new Date(),
+            source: {
+                action: 'Spin Deduction',
+                result: -100,
+                description: '100 coins were deducted for spinning the wheel',
+            },
+        };
+        userBalance.balance_history.push(spinDeductionTransaction);
+
+        // Update the coins and wheel earnings based on the spin result
         if (spinResult > 0) {
-            user.coins += spinResult; // Add coins
+            userBalance.coins += spinResult; // Add coins for positive result
+            userBalance.wheel_earnings += spinResult; // Update wheel earnings
         } else {
-            user.coins += spinResult; // Subtract coins (spinResult is negative)
+            userBalance.coins += spinResult; // Subtract coins for negative result
         }
 
-        // Add transaction to balance history
-        user.balance_history.push({
+        // Create a transaction entry for the spin result
+        const spinResultTransaction = {
             transactionType: spinResult >= 0 ? 'Credited' : 'Debited',
             amount: Math.abs(spinResult),
-            date: new Date()
-        });
+            date: new Date(),
+            source: {
+                action: 'Spin Result',
+                result: spinResult,
+                description: spinResult >= 0
+                    ? `You earned ${spinResult} coins from the spin`
+                    : `You lost ${Math.abs(spinResult)} coins from the spin`,
+            },
+        };
+        userBalance.balance_history.push(spinResultTransaction);
 
-        // Update last updated timestamp
-        user.last_updated = new Date();
+        // Update the last updated timestamp
+        userBalance.last_updated = new Date();
 
-        // Save the updated user document
-        await user.save();
+        // Save the updated user balance
+        await userBalance.save();
 
         return res.status(200).json({
             message: 'Spin completed successfully',
             spinResult,
-            coins: user.coins
+            coins: userBalance.coins,
+            walletBalance: userBalance.wallet_balance,
+            totalEarnings: userBalance.total_earnings,
+            wheelEarnings: userBalance.wheel_earnings,
+            transactions: {
+                deduction: spinDeductionTransaction,
+                result: spinResultTransaction,
+            }, // Return both transactions
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred', error });
+        console.error('Error occurred while processing spin:', error);
+        return res.status(500).json({ message: 'An error occurred while processing the spin', error });
     }
 };
+
 
 exports.getUnifiedEarningHistory = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        // Ensure userId is a valid ObjectId string before converting
+        // Validate userId format
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             console.log('Invalid userId format');
             return res.status(400).json({ message: 'Invalid userId format' });
         }
 
-        // Convert userId to ObjectId
         const userObjectId = new mongoose.Types.ObjectId(userId);
         console.log('Converted userId to ObjectId:', userObjectId);
 
-        // Fetch user wallet history
+        // Fetch user balance
         const user = await UserBalance.findOne({ user_id: userObjectId });
         if (!user) {
             console.log('User not found');
@@ -221,12 +266,12 @@ exports.getUnifiedEarningHistory = async (req, res) => {
 
         console.log('User balance data:', user);
 
-        // Get balance history
+        // Spin wheel history
         const spinHistory = user.balance_history.map(entry => ({
             amount: entry.amount,
             date: entry.date,
-            source: 'Spin Wheel',
-            transactionType: entry.transactionType
+            source: entry.source || 'Spin Wheel',
+            transactionType: entry.transactionType,
         }));
         console.log('Spin wheel history:', spinHistory);
 
@@ -234,34 +279,36 @@ exports.getUnifiedEarningHistory = async (req, res) => {
         const offerEarnings = await Offer.find();
         console.log('Offer earnings fetched:', offerEarnings);
 
-        // Format offer earnings and calculate goal earnings
+        // Fetch user leads
+        const userLeads = await UserLead.find({ user_id: userObjectId });
+        console.log('User leads fetched:', userLeads);
+
+        // Calculate goal earnings and prepare formatted offers
         let goalEarnings = 0;
         const formattedOfferEarnings = offerEarnings.map(offer => {
             const completedGoals = offer.multiple_rewards.filter(goal => goal.goal_status === 2);
-            console.log('Completed goals for offer:', offer.title, completedGoals);
 
-            if (completedGoals.length === 0) {
-                return null;
-            }
+            if (completedGoals.length === 0) return null;
 
             completedGoals.forEach(goal => {
-                goalEarnings += goal.goal_amount; // Accumulate goal earnings
-                console.log('Accumulated goal earnings:', goalEarnings);
+                goalEarnings += goal.goal_amount;
             });
 
             const goals = completedGoals.map(goal => ({
                 goalName: goal.goal_name,
-                goalStatus: goal.goal_status,
-                goalAmount: goal.goal_amount
+                goalAmount: goal.goal_amount,
             }));
 
             return {
+                offerId: offer._id,
                 title: offer.title,
                 amount: offer.total_user_payout,
                 date: offer.added_on,
                 source: 'Offer',
                 transactionType: offer.total_user_payout >= 0 ? 'Credited' : 'Debited',
-                goals
+                goal_name: goals.map(g => g.goalName), // Include goal names
+                goal_payout: goals.map(g => g.goalAmount), // Include goal payouts
+                goals, // Detailed goals
             };
         }).filter(offer => offer !== null);
 
@@ -270,9 +317,8 @@ exports.getUnifiedEarningHistory = async (req, res) => {
         // Combine all earnings
         const unifiedEarnings = [
             ...spinHistory,
-            ...formattedOfferEarnings
+            ...formattedOfferEarnings,
         ];
-        console.log('Unified earnings before sorting:', unifiedEarnings);
 
         // Sort earnings by date (descending)
         unifiedEarnings.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -280,26 +326,31 @@ exports.getUnifiedEarningHistory = async (req, res) => {
 
         // Update user balance if there were goal earnings
         if (goalEarnings > 0) {
-            user.total_earnings += goalEarnings; // Update total earnings
+            user.total_earnings += goalEarnings;
             user.balance_history.push({
                 amount: goalEarnings,
                 date: new Date(),
-                transactionType: 'Credited' // Assuming goal earnings are credited
+                transactionType: 'Credited',
+                source: 'Goals',
             });
 
             console.log('Updating user balance with goal earnings:', goalEarnings);
-            await user.save(); // Save updated user balance
-            console.log('User balance after update:', user);
+            await user.save();
         }
 
         return res.status(200).json({
             message: 'Unified earning history fetched successfully',
             totalEarnings: user.total_earnings,
-            history: unifiedEarnings, // Combined earnings (spin wheel + offer)
-            offerEarnings: formattedOfferEarnings // Offer-specific earnings
+            walletBalance: user.wallet_balance,
+            goalEarnings,
+            history: unifiedEarnings, // Combined earnings
         });
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).json({ message: 'An error occurred while fetching earning history', error });
+        console.error('Error occurred while fetching earning history:', error);
+        return res.status(500).json({
+            message: 'An error occurred while fetching earning history',
+            error: error.message,
+        });
     }
 };
+

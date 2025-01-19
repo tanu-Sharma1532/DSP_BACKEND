@@ -1,74 +1,30 @@
 const mongoose = require('mongoose');
-const moment = require('moment-timezone');
 
-const userBalanceWithHistorySchema = new mongoose.Schema({
-    user_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    wallet_balance: {
-        type: Number,
-        required: false,
-        default: 25
-    },
-    total_earnings: {
-        type: Number,
-        required: false,
-        default: 0
-    },
-    wheel_earnings: {
-        type: Number,
-        required: false,
-        default: 0
-    },
-    last_updated: {
-        type: Date,
-        default: () => moment().tz('Asia/Kolkata').toDate()
-    },
-    coins: {
-        type: Number,
-        required: false,
-        default: 0
-    },
-    balance_history: [
-        {
-            transactionType: {
-                type: String,
-                enum: ['Credited', 'Debited'],
-                required: true
-            },
-            amount: {
-                type: Number,
-                required: true
-            },
-            date: {
-                type: Date,
-                default: () => moment().tz('Asia/Kolkata').toDate()
-            }
+const userBalanceSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    wallet_balance: { type: Number, required: true },
+    total_earnings: { type: Number, required: true },
+    wheel_earnings: { type: Number, required: true },
+    last_updated: { type: Date, required: true },
+    coins: { type: Number, required: true },
+    balance_history: [{
+        transactionType: { type: String, required: true },
+        amount: { type: Number, required: true },
+        date: { type: Date, required: true },
+        source: { 
+            type: Map, 
+            of: mongoose.Schema.Types.Mixed,  // Allows storing mixed types (e.g., objects)
+            required: true
         }
-    ],
-    goals: [
-        {
-            offer_id: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Offer',
-                required: true
-            },
-            goal_name: {
-                type: String,
-                required: true
-            },
-            goal_payout: {
-                type: Number,
-                required: true
-            },
-            completed_on: {
-                type: Date,
-                default: () => moment().tz('Asia/Kolkata').toDate()
-            }
-        }
-    ]
+    }],
+    goals: [{
+        offer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Offer' },
+        goal_name: { type: String, required: true },
+        goal_payout: { type: Number, required: true },
+        completed_on: { type: Date, required: true }
+    }]
 });
 
-module.exports = mongoose.model('UserBalanceWithHistory', userBalanceWithHistorySchema);
+const UserBalanceWithHistory = mongoose.model('UserBalanceWithHistory', userBalanceSchema);
+
+module.exports = UserBalanceWithHistory;
