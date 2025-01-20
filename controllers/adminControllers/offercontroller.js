@@ -30,13 +30,41 @@ exports.createOffer = async (req, res) => {
 // Get all offers
 exports.getAllOffers = async (req, res) => {
     try {
-        const offers = await Offer.find();
-        res.status(200).json({ success: true, data: offers });
+        const offers = await Offer.find()
+            .populate({
+                path: 'brand',
+                select: 'brand_name brand_image' // Select only the brand name and image
+            })
+            .populate({
+                path: 'category',
+                select: 'cat_name cat_image' // Select only the category name and image
+            })
+            .select('title offer_status our_payout total_user_payout added_on featured') // Select the required fields for the offer
+            .exec();
+
+        // Formatting the response data to match the requested structure
+        const formattedOffers = offers.map(offer => ({
+            id: offer._id,
+            title: offer.title,
+            brand_name: offer.brand?.brand_name,
+            brand_image: offer.brand?.brand_image,
+            cat_name: offer.category?.cat_name,
+            cat_image: offer.category?.cat_image,
+            subcategory: offer.subcategory, // Assuming subcategory is directly stored in the offer
+            our_payout: offer.our_payout,
+            user_payout: offer.total_user_payout,
+            added_on: offer.added_on,
+            featured: offer.featured,
+            offer_status: offer.offer_status
+        }));
+
+        res.status(200).json({ success: true, data: formattedOffers });
     } catch (error) {
         console.error('Error fetching offers:', error);
         res.status(500).json({ success: false, message: 'Error fetching offers.', error: error.message });
     }
 };
+
 
 // Get offer by ID
 exports.getOfferById = async (req, res) => {
