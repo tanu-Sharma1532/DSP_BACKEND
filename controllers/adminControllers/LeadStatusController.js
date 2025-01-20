@@ -40,7 +40,6 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
         // Fetch or create user balance
         let userBalance = await UserBalanceWithHistory.findOne({ user_id: userId });
         if (!userBalance) {
-            // If user balance does not exist, create a new balance record
             userBalance = new UserBalanceWithHistory({
                 user_id: userId,
                 wallet_balance: 0,
@@ -49,7 +48,7 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                 last_updated: moment().tz('Asia/Kolkata').toDate(),
                 coins: 0,
                 balance_history: [],
-                goals: [] // initialize the goals array as empty
+                goals: []
             });
             await userBalance.save();
             console.log(`Created new balance record for user ID: ${userId}`);
@@ -60,9 +59,7 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
         let goalPayout = 0;
 
         if (offer.goals_type === 'single') {
-            // Handle single goal type
-            lead.goal_status = goalStatus; // Update the goal_status directly for single goal
-
+            lead.goal_status = goalStatus;
             lead.lead_status = goalStatus === "2" ? "2" : goalStatus === "0" ? "0" : "1";
             lead.remarks = remarks;
 
@@ -70,11 +67,11 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                 const amount = offer.our_payout || 0;
                 goalPayout = amount;
 
-                // Update user balance
                 userBalance.total_earnings += amount;
+                userBalance.coins += amount;
                 userBalance.balance_history.push({
                     transactionType: 'Credited',
-                    amount,
+                    amount: amount,
                     date: moment().tz('Asia/Kolkata').toDate(),
                     source: {
                         offer_id: offerId,
@@ -85,12 +82,8 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
 
-                // Initialize goals array if not defined
-                if (!userBalance.goals) {
-                    userBalance.goals = [];
-                }
+                if (!userBalance.goals) userBalance.goals = [];
 
-                // Add the goal to the goals array if not already added
                 const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === goalId);
                 if (!goalExists) {
                     userBalance.goals.push({
@@ -99,6 +92,28 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                         goal_payout: amount,
                         completed_on: moment().tz('Asia/Kolkata').toDate(),
                     });
+                }
+
+                // Add total_coins and total_user_payout if lead_status is 2
+                if (lead.lead_status === '2') {
+                    const totalCoins = offer.total_coins || 0;
+                    const totalUserPayout = offer.total_user_payout || 0;
+
+                    userBalance.coins += totalCoins;
+                    userBalance.total_earnings += totalUserPayout;
+
+                    userBalance.balance_history.push({
+                        transactionType: 'Credited',
+                        amount: totalUserPayout,
+                        date: moment().tz('Asia/Kolkata').toDate(),
+                        source: {
+                            offer_id: offerId,
+                            goal_name: 'Total Payout',
+                            goal_payout: totalUserPayout,
+                            completed_on: moment().tz('Asia/Kolkata').toDate()
+                        }
+                    });
+                    userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
                 }
 
                 await userBalance.save();
@@ -132,69 +147,58 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
         }
 
         if (offer.goals_type === 'multiple') {
-            // Find the goal in the multiple_rewards array by goalId
-            const goal = offer.multiple_rewards.find((g) => String(g._id) === String(goalId));
-            if (!goal) {
-                return res.status(404).json({ success: false, message: "Goal not found in offer's multiple_rewards." });
+            const goalIndex = lead.goals.findIndex(g => String(g.goal_id) === String(goalId));
+            if (goalIndex !== -1) {
+                lead.goals[goalIndex].goal_status = goalStatus;
+            } else {
+                lead.goals.push({ goal_id: goalId, goal_status: goalStatus });
             }
 
-            // Update the goal's status
-            goal.goal_status = goalStatus;
-            goalPayout = goal.goal_amount || 0;
+            const allGoalsCompleted = lead.goals.every(g => g.goal_status === 2);
+            lead.lead_status = allGoalsCompleted ? "2" : "1";
+            lead.remarks = remarks;
 
-            // Update user balance
-            if (goalStatus === "2") {
-                userBalance.total_earnings += goalPayout;
+            if (allGoalsCompleted) {
+                const amount = offer.our_payout || 0;
+                goalPayout = amount;
+
+                userBalance.total_earnings += amount;
+                userBalance.coins += amount;
                 userBalance.balance_history.push({
                     transactionType: 'Credited',
-                    amount: goalPayout,
+                    amount: amount,
                     date: moment().tz('Asia/Kolkata').toDate(),
                     source: {
                         offer_id: offerId,
-                        goal_name: goalId,
-                        goal_payout: goalPayout,
+                        goal_name: 'All Goals',
+                        goal_payout: amount,
                         completed_on: moment().tz('Asia/Kolkata').toDate()
                     }
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
 
-                // Initialize goals array if not defined
-                if (!userBalance.goals) {
-                    userBalance.goals = [];
-                }
+                // Add total_coins and total_user_payout if all goals are completed
+                const totalCoins = offer.total_coins || 0;
+                const totalUserPayout = offer.total_user_payout || 0;
 
-                // Add the goal to the goals array if not already added
-                const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === goalId);
-                if (!goalExists) {
-                    userBalance.goals.push({
+                userBalance.coins += totalCoins;
+                userBalance.total_earnings += totalUserPayout;
+
+                userBalance.balance_history.push({
+                    transactionType: 'Credited',
+                    amount: totalUserPayout,
+                    date: moment().tz('Asia/Kolkata').toDate(),
+                    source: {
                         offer_id: offerId,
-                        goal_name: goalId,
-                        goal_payout: goalPayout,
-                        completed_on: moment().tz('Asia/Kolkata').toDate(),
-                    });
-                }
+                        goal_name: 'Total Payout',
+                        goal_payout: totalUserPayout,
+                        completed_on: moment().tz('Asia/Kolkata').toDate()
+                    }
+                });
+                userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
 
                 await userBalance.save();
             }
-
-            // Update the lead's goals array
-            const goalInLead = lead.goals.find((g) => String(g.goal_id) === String(goalId));
-            if (goalInLead) {
-                goalInLead.goal_status = goalStatus;
-            } else {
-                lead.goals.push({
-                    goal_id: goalId,
-                    goal_status: goalStatus,
-                });
-            }
-
-            lead.remarks = remarks;
-
-            // Check if all goals in the offer are completed
-            const allGoalsCompleted = offer.multiple_rewards.every((g) => g.goal_status === "2");
-
-            // Update lead_status
-            lead.lead_status = allGoalsCompleted ? "2" : "1";
 
             await lead.save();
 
