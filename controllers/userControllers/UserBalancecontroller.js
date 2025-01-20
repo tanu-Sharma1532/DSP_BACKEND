@@ -161,7 +161,7 @@ exports.spinWheel = async (req, res) => {
         let userBalance = await UserBalance.findOne({ user_id: userId });
         if (!userBalance) {
             // If no balance is found, create a new one with default values
-            userBalance = new UserBalanceWithHistory({
+            userBalance = new UserBalance({
                 user_id: userId,
                 wallet_balance: 25, // Default wallet balance
                 total_earnings: 0, // Default total earnings

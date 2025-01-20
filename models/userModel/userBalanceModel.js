@@ -21,7 +21,7 @@ const userBalanceSchema = new mongoose.Schema({
         offer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Offer' },
         goal_name: { type: String, required: true },
         goal_payout: { type: Number, required: true },
-        completed_on: { type: Date, required: true }
+        completed_on: { type: Date, required: false }  // Make completed_on optional
     }]
 });
 

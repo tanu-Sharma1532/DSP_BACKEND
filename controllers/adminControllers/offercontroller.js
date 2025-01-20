@@ -27,7 +27,6 @@ exports.createOffer = async (req, res) => {
 };
 
 
-// Get all offers
 exports.getAllOffers = async (req, res) => {
     try {
         const offers = await Offer.find()
@@ -44,18 +43,18 @@ exports.getAllOffers = async (req, res) => {
 
         // Formatting the response data to match the requested structure
         const formattedOffers = offers.map(offer => ({
-            id: offer._id,
-            title: offer.title,
-            brand_name: offer.brand?.brand_name,
-            brand_image: offer.brand?.brand_image,
-            cat_name: offer.category?.cat_name,
-            cat_image: offer.category?.cat_image,
-            subcategory: offer.subcategory, // Assuming subcategory is directly stored in the offer
-            our_payout: offer.our_payout,
-            user_payout: offer.total_user_payout,
-            added_on: offer.added_on,
-            featured: offer.featured,
-            offer_status: offer.offer_status
+            id: offer._id || null,
+            title: offer.title || null,
+            brand_name: offer.brand?.brand_name || null,
+            brand_image: offer.brand?.brand_image || null,
+            cat_name: offer.category?.cat_name || null,
+            cat_image: offer.category?.cat_image || null,
+            subcategory: offer.subcategory || null, // Assuming subcategory is directly stored in the offer
+            our_payout: offer.our_payout || null,
+            user_payout: offer.total_user_payout || null,
+            added_on: offer.added_on || null,
+            featured: offer.featured || null,
+            offer_status: offer.offer_status || null
         }));
 
         res.status(200).json({ success: true, data: formattedOffers });
@@ -64,6 +63,7 @@ exports.getAllOffers = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error fetching offers.', error: error.message });
     }
 };
+
 
 
 // Get offer by ID

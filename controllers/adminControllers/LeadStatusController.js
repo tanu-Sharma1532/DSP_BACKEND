@@ -63,6 +63,9 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
             lead.lead_status = goalStatus === "2" ? "2" : goalStatus === "0" ? "0" : "1";
             lead.remarks = remarks;
 
+            // Save the exact goal name in the lead document
+            lead.goal_name = offer.goal_name;  // Directly use the goal_name from the offer model
+
             if (goalStatus === "2") {
                 const amount = offer.our_payout || 0;
                 goalPayout = amount;
@@ -75,7 +78,7 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     date: moment().tz('Asia/Kolkata').toDate(),
                     source: {
                         offer_id: offerId,
-                        goal_name: goalId,
+                        goal_name: offer.goal_name, // Use the exact goal name from the offer model
                         goal_payout: amount,
                         completed_on: moment().tz('Asia/Kolkata').toDate()
                     }
@@ -84,11 +87,11 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
 
                 if (!userBalance.goals) userBalance.goals = [];
 
-                const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === goalId);
+                const goalExists = userBalance.goals.some(g => String(g.offer_id) === String(offerId) && String(g.goal_name) === offer.goal_name);
                 if (!goalExists) {
                     userBalance.goals.push({
                         offer_id: offerId,
-                        goal_name: goalId,
+                        goal_name: offer.goal_name, // Use the exact goal name from the offer model
                         goal_payout: amount,
                         completed_on: moment().tz('Asia/Kolkata').toDate(),
                     });
@@ -102,13 +105,14 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     userBalance.coins += totalCoins;
                     userBalance.total_earnings += totalUserPayout;
 
+                    // Use the goal_name from offer model
                     userBalance.balance_history.push({
                         transactionType: 'Credited',
                         amount: totalUserPayout,
                         date: moment().tz('Asia/Kolkata').toDate(),
                         source: {
                             offer_id: offerId,
-                            goal_name: 'Total Payout',
+                            goal_name: offer.goal_name,  // Use the exact goal name from the offer model
                             goal_payout: totalUserPayout,
                             completed_on: moment().tz('Asia/Kolkata').toDate()
                         }
@@ -134,6 +138,7 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     lead: {
                         leadId: lead._id,
                         lead_status: lead.lead_status,
+                        goal_name: lead.goal_name, // Returning the exact goal name saved
                         remarks: lead.remarks,
                     },
                     total_earnings: userBalance.total_earnings,
@@ -146,19 +151,29 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
             });
         }
 
+        // For multiple goals type
         if (offer.goals_type === 'multiple') {
             const goalIndex = lead.goals.findIndex(g => String(g.goal_id) === String(goalId));
+            let goalName = null;
+
+            // Find the goal name from the multiple_rewards array
             if (goalIndex !== -1) {
                 lead.goals[goalIndex].goal_status = goalStatus;
             } else {
                 lead.goals.push({ goal_id: goalId, goal_status: goalStatus });
             }
 
-            const allGoalsCompleted = lead.goals.every(g => g.goal_status === 2);
-            lead.lead_status = allGoalsCompleted ? "2" : "1";
-            lead.remarks = remarks;
+            // Find the goal name from the multiple_rewards
+            const reward = offer.multiple_rewards.find(reward => String(reward._id) === String(goalId));
+            if (reward) {
+                goalName = reward.goal_name;
+            }
 
-            if (allGoalsCompleted) {
+            if (!goalName) {
+                goalName = offer.goal_name;  // Fallback to the goal_name from the offer model
+            }
+
+            if (goalStatus === "2") {
                 const amount = offer.our_payout || 0;
                 goalPayout = amount;
 
@@ -170,14 +185,28 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     date: moment().tz('Asia/Kolkata').toDate(),
                     source: {
                         offer_id: offerId,
-                        goal_name: 'All Goals',
+                        goal_name: goalName, // Use the exact goal name from multiple_rewards or fallback
                         goal_payout: amount,
                         completed_on: moment().tz('Asia/Kolkata').toDate()
                     }
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
+            }
 
-                // Add total_coins and total_user_payout if all goals are completed
+            // Check if all goals are completed (status = '2') to mark lead as completed
+            const allGoalsCompleted = lead.goals.every(g => g.goal_status === '2');
+
+            // Only set lead_status to '2' if all goals are completed
+            if (allGoalsCompleted) {
+                lead.lead_status = "2";  // Update lead status to '2' only if all goals are completed
+            } else {
+                lead.lead_status = "1";  // Update lead status to '1' if not all goals are completed
+            }
+
+            lead.remarks = remarks;
+
+            // Now check if the lead status has been updated to '2' and add total payout and coins
+            if (lead.lead_status === '2') {
                 const totalCoins = offer.total_coins || 0;
                 const totalUserPayout = offer.total_user_payout || 0;
 
@@ -190,17 +219,26 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                     date: moment().tz('Asia/Kolkata').toDate(),
                     source: {
                         offer_id: offerId,
-                        goal_name: 'Total Payout',
+                        goal_name: goalName,  // Use the goal_name from the corresponding reward or fallback
                         goal_payout: totalUserPayout,
                         completed_on: moment().tz('Asia/Kolkata').toDate()
                     }
                 });
                 userBalance.last_updated = moment().tz('Asia/Kolkata').toDate();
-
-                await userBalance.save();
             }
 
+            await userBalance.save();
             await lead.save();
+
+            // Map the lead goals to include the goal_name from the offer's multiple_rewards
+            const updatedGoals = lead.goals.map(g => {
+                const reward = offer.multiple_rewards.find(reward => String(reward._id) === String(g.goal_id));
+                return {
+                    goal_id: g.goal_id,
+                    goal_name: reward ? reward.goal_name : g.goal_id, // Fallback to goal_id if not found
+                    goal_status: g.goal_status
+                };
+            });
 
             return res.status(200).json({
                 success: true,
@@ -210,10 +248,7 @@ exports.updateGoalAndLeadStatusForUser = async (req, res) => {
                         leadId: lead._id,
                         lead_status: lead.lead_status,
                         remarks: lead.remarks,
-                        goals: lead.goals.map((g) => ({
-                            goal_id: g.goal_id,
-                            goal_status: g.goal_status,
-                        })),
+                        goals: updatedGoals, // Include goal_name along with other details
                     },
                     total_earnings: userBalance.total_earnings,
                     goal_payout: goalPayout,
