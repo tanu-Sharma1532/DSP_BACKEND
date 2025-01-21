@@ -5,6 +5,69 @@ const UserLead = require('../../models/adminModel/userLeadsModel');
 const UserBalanceWithHistory = require('../../models/userModel/userBalanceModel');
 const User = require('../../models/userModel/userModel');
 
+exports.getAllLeads = async (req, res) => {
+    try {
+        // Fetch all leads with populated user and offer details
+        const leads = await UserLead.find()
+            .populate('user_id', 'name email') // Replace 'name email' with the desired fields from the User model
+            .populate('offer_id', 'title description'); // Replace 'title description' with the desired fields from the Offer model
+
+        if (!leads.length) {
+            return res.status(404).json({ message: 'No leads found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: leads,
+        });
+    } catch (error) {
+        console.error('Error fetching leads:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message,
+        });
+    }
+};
+
+exports.getLeadById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Validate ID format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid lead ID format',
+            });
+        }
+
+        // Fetch the lead by ID with populated user and offer details
+        const lead = await UserLead.findById(id)
+            .populate('user_id', 'name email') // Replace 'name email' with the desired fields from the User model
+            .populate('offer_id', 'title description'); // Replace 'title description' with the desired fields from the Offer model
+
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lead not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: lead,
+        });
+    } catch (error) {
+        console.error('Error fetching lead:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message,
+        });
+    }
+};
+
 exports.updateGoalAndLeadStatusForUser = async (req, res) => {
     try {
         const { userId, offerId, goalId, goalStatus, remarks, leadId } = req.body;
